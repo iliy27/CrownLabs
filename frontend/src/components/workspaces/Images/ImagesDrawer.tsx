@@ -5,18 +5,14 @@ import {
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Badge, Button, Drawer, Empty, Table, Tooltip } from 'antd';
-import { useContext, useEffect, useMemo, useState, type FC } from 'react';
+import { useContext, useMemo, useState, type FC } from 'react';
 import {
   Phase4,
-  type UpdatedWorkspaceImagesSubscription,
   useDeleteWorkspaceImageMutation,
-  useWorkspaceImagesQuery,
 } from '../../../generated-types';
 import { ErrorContext } from '../../../errorHandling/ErrorContext';
-import { ErrorTypes } from '../../../errorHandling/utils';
 import { ModalAlert } from '../../common/ModalAlert';
-import { updateWorkspaceImages } from './workspaceImagesUpdates';
-import { updatedWorkspaceImages } from '../../../graphql-components/subscription';
+import { WorkspaceImagesContext } from '../../../contexts/WorkspaceImagesContext';
 
 type WorkspaceImage = {
   id: string;
@@ -28,10 +24,6 @@ type WorkspaceImage = {
   createdAt: string;
   phase?: Phase4;
 };
-
-export interface ImagesDrawerProps {
-  workspaceNamespace: string;
-}
 
 const formatCreationDate = (value?: string | null) => {
   if (!value) return '—';
@@ -45,49 +37,16 @@ const formatCreationDate = (value?: string | null) => {
   }).format(date);
 };
 
-const ImagesDrawer: FC<ImagesDrawerProps> = ({ workspaceNamespace }) => {
-  const { apolloErrorCatcher, makeErrorCatcher } = useContext(ErrorContext);
-  const [open, setOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<WorkspaceImage>();
-  const [showDeleteModalConfirm, setShowDeleteModalConfirm] = useState(false);
-
+const ImagesDrawer: FC = () => {
+  const { apolloErrorCatcher } = useContext(ErrorContext);
   const {
     data,
     loading: loadingImages,
-    error: imagesError,
-    subscribeToMore,
-  } = useWorkspaceImagesQuery({
-    variables: { workspaceNamespace },
-    skip: !workspaceNamespace,
-    fetchPolicy: 'network-only',
-    onError: apolloErrorCatcher,
-  });
-
-  useEffect(() => {
-    if (!workspaceNamespace || loadingImages || imagesError) return;
-
-    // Keep the subscription active while mounted, even with the drawer closed,
-    // so the badge and mutations from other views stay synchronized too.
-    const unsubscribe = subscribeToMore<UpdatedWorkspaceImagesSubscription>({
-      document: updatedWorkspaceImages,
-      variables: { workspaceNamespace },
-      onError: makeErrorCatcher(ErrorTypes.GenericError),
-      updateQuery: (previous, { subscriptionData }) =>
-        updateWorkspaceImages(
-          previous,
-          subscriptionData.data?.updatedImage,
-          workspaceNamespace,
-        ),
-    });
-
-    return () => unsubscribe();
-  }, [
-    makeErrorCatcher,
-    imagesError,
-    loadingImages,
-    subscribeToMore,
     workspaceNamespace,
-  ]);
+  } = useContext(WorkspaceImagesContext);
+  const [open, setOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<WorkspaceImage>();
+  const [showDeleteModalConfirm, setShowDeleteModalConfirm] = useState(false);
 
   const [deleteWorkspaceImage, { loading: deletingImage }] =
     useDeleteWorkspaceImageMutation({
@@ -116,7 +75,7 @@ const ImagesDrawer: FC<ImagesDrawerProps> = ({ workspaceNamespace }) => {
   );
 
   const confirmDelete = async () => {
-    if (!selectedImage) return;
+    if (!selectedImage || !workspaceNamespace) return;
 
     await deleteWorkspaceImage({
       variables: {

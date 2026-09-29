@@ -27,7 +27,6 @@ const getDefaultEnvironment = (envCount: number): TemplateFormEnv => {
 };
 
 interface IEnvironmentLabelProps {
-  workspaceNamespace: string;
   availableImagesVM: Image[];
   availableImagesContainer: Image[];
   resources: Resources;
@@ -40,7 +39,6 @@ interface IEnvironmentLabelProps {
 }
 
 export const EnvironmentList: FC<IEnvironmentLabelProps> = ({
-  workspaceNamespace,
   availableImagesVM,
   availableImagesContainer,
   resources,
@@ -135,7 +133,6 @@ export const EnvironmentList: FC<IEnvironmentLabelProps> = ({
                 label: <EnvironmentTabLabel envIndex={name} />,
                 children: (
                   <Environment
-                    workspaceNamespace={workspaceNamespace}
                     restField={restField}
                     parentFormName={name}
                     availableImagesVM={availableImagesVM}

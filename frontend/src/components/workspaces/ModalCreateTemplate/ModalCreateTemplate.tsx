@@ -956,7 +956,6 @@ const ModalCreateTemplate: FC<IModalCreateTemplateProps> = ({ ...props }) => {
   const environmentListForm = (
     <>
       <EnvironmentList
-        workspaceNamespace={workspaceNamespace}
         availableImagesVM={availableImagesVM}
         availableImagesContainer={availableImagesContainer}
         publicSnapshotImageList={publicSnapshotImageList}

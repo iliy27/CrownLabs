@@ -16,9 +16,8 @@ import { useContext, useEffect, useState, type FC } from 'react';
 import {
   EnvironmentType,
   Phase4,
-  useWorkspaceImagesQuery,
 } from '../../../generated-types';
-import { ErrorContext } from '../../../errorHandling/ErrorContext';
+import { WorkspaceImagesContext } from '../../../contexts/WorkspaceImagesContext';
 import { SharedVolumeList } from './SharedVolumeList';
 import type { SharedVolume } from '../../../utils';
 import type {
@@ -105,7 +104,6 @@ const getAvailableImagesForEnvironment = (
 };
 
 type EnvironmentProps = {
-  workspaceNamespace: string;
   availableImagesVM: Image[];
   availableImagesContainer: Image[];
   resources: Resources;
@@ -117,7 +115,6 @@ type EnvironmentProps = {
 } & ChildFormItem;
 
 export const Environment: FC<EnvironmentProps> = ({
-  workspaceNamespace,
   parentFormName: name,
   restField,
   availableImagesVM,
@@ -233,24 +230,11 @@ export const Environment: FC<EnvironmentProps> = ({
   };
 
   const currentEnvironmentType = getEnvironmentType(name);
-  const { apolloErrorCatcher } = useContext(ErrorContext);
   const {
     data: workspaceImages,
     loading: loadingWorkspaceImages,
     error: workspaceImagesError,
-  } = useWorkspaceImagesQuery({
-    variables: { workspaceNamespace },
-    skip:
-      currentEnvironmentType !== EnvironmentType.LocalVm || !workspaceNamespace,
-    /* ImagesDrawer and this picker use the same GraphQL query and workspace
-    namespace. Apollo can therefore reuse its normalized cache when the
-    drawer already loaded this list, avoiding an additional network request.
-    The query still runs when the cache has no entry (for example, when the
-    picker is the first image-related UI opened by the user). Keeping this
-    query local also avoids coupling the modal to the drawer component. */
-    fetchPolicy: 'cache-first',
-    onError: apolloErrorCatcher,
-  });
+  } = useContext(WorkspaceImagesContext);
 
   const completedImageOptions = (images: typeof workspaceImages) =>
     (images?.imageList?.images ?? [])

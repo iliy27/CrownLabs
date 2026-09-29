@@ -388,7 +388,9 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
                   className="flex justify-center items-center"
                   style={{
                     fontSize: '22px',
-                    color: isDarkTheme ? '#fff' : '#000',
+                    ...(imageCreationAvailability.canCreate
+                      ? { color: isDarkTheme ? '#fff' : '#000' }
+                      : {}),
                   }}
                 />
               }

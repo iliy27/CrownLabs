@@ -556,7 +556,7 @@ const TemplatesTableLogic: FC<ITemplateTableLogicProps> = ({ ...props }) => {
               isPersonal={isPersonal}
             />
           )}
-          <ImagesDrawer workspaceNamespace={workspaceNamespace} />
+          <ImagesDrawer />
         </div>
       ) : null}
     </div>
