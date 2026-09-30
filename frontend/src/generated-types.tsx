@@ -392,6 +392,8 @@ export type ImagesListItem = {
   __typename?: 'ImagesListItem';
   /** The name identifying a single image. */
   name: Scalars['String']['output'];
+  /** Optional metadata for individual versions. Entries may be missing when the source has no metadata. */
+  versionDetails?: Maybe<Array<Maybe<ImageVersionDetails>>>;
   /** The list of versions the image is available in. */
   versions: Array<Maybe<Scalars['String']['output']>>;
 };
@@ -400,8 +402,27 @@ export type ImagesListItem = {
 export type ImagesListItemInput = {
   /** The name identifying a single image. */
   name: Scalars['String']['input'];
+  /** Optional metadata for individual versions. Entries may be missing when the source has no metadata. */
+  versionDetails?: InputMaybe<Array<InputMaybe<ImageVersionDetailsInput>>>;
   /** The list of versions the image is available in. */
   versions: Array<InputMaybe<Scalars['String']['input']>>;
+};
+
+/** ImageVersionDetails describes metadata for one image version. */
+export type ImageVersionDetails = {
+  __typename?: 'ImageVersionDetails';
+  /** The corresponding entry in versions, or an empty string for an unversioned artifact. */
+  version: Scalars['String']['output'];
+  /** The snapshot volume capacity as a Kubernetes quantity, for example "10Gi". Omitted when unknown; this is not the compressed image size in a registry. */
+  volumeSize?: Maybe<Scalars['String']['output']>;
+};
+
+/** ImageVersionDetails describes metadata for one image version. */
+export type ImageVersionDetailsInput = {
+  /** The corresponding entry in versions, or an empty string for an unversioned artifact. */
+  version: Scalars['String']['input'];
+  /** The snapshot volume capacity as a Kubernetes quantity, for example "10Gi". Omitted when unknown; this is not the compressed image size in a registry. */
+  volumeSize?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Instance is the reference to the persistent VM instance to be snapshotted. */
@@ -3898,7 +3919,7 @@ export type AllTemplatesQuery = { __typename?: 'Query', allTemplates?: { __typen
 export type ImagesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ImagesQuery = { __typename?: 'Query', imageList?: { __typename?: 'ItPolitoCrownlabsV1alpha1ImageListList', images: Array<{ __typename?: 'ItPolitoCrownlabsV1alpha1ImageList', metadata?: { __typename?: 'IoK8sApimachineryPkgApisMetaV1ObjectMeta', name?: string | null } | null, spec?: { __typename?: 'Spec', projectBaseName?: string | null, registryName: string, images: Array<{ __typename?: 'ImagesListItem', name: string, versions: Array<string | null> } | null> } | null } | null> } | null };
+export type ImagesQuery = { __typename?: 'Query', imageList?: { __typename?: 'ItPolitoCrownlabsV1alpha1ImageListList', images: Array<{ __typename?: 'ItPolitoCrownlabsV1alpha1ImageList', metadata?: { __typename?: 'IoK8sApimachineryPkgApisMetaV1ObjectMeta', name?: string | null } | null, spec?: { __typename?: 'Spec', projectBaseName?: string | null, registryName: string, images: Array<{ __typename?: 'ImagesListItem', name: string, versions: Array<string | null>, versionDetails?: Array<{ __typename?: 'ImageVersionDetails', version: string, volumeSize?: string | null } | null> | null } | null> } | null } | null> } | null };
 
 export type OwnedInstancesQueryVariables = Exact<{
   tenantNamespace: Scalars['String']['input'];
@@ -5106,6 +5127,10 @@ export const ImagesDocument = gql`
         images {
           name
           versions
+          versionDetails {
+            version
+            volumeSize
+          }
         }
       }
     }

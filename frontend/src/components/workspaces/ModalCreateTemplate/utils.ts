@@ -31,6 +31,21 @@ export const getImageNameNoVer = (image: string) => {
   return image.includes(':') ? image.slice(0, image.lastIndexOf(':')) : image;
 };
 
+// Snapshot volumes originate from the template Disk field, which stores an
+// integer as a Gi quantity (for example, 15 becomes "15Gi").
+export const volumeSizeToGiB = (
+  volumeSize: string | number | null | undefined,
+): number | undefined => {
+  if (volumeSize === null || volumeSize === undefined) return;
+
+  if (typeof volumeSize === 'number') {
+    return Number.isInteger(volumeSize) ? volumeSize : undefined;
+  }
+
+  const match = volumeSize.trim().match(/^(\d+)Gi$/);
+  return match ? Number(match[1]) : undefined;
+};
+
 export const getDefaultTemplate = (resources: Resources): Template => {
   return {
     name: '',
@@ -102,6 +117,12 @@ export const getImageLists = (data: ImagesQuery): ImageList[] => {
         .map(i => ({
           name: i!.name,
           versions: i!.versions.filter(v => v !== null) as string[],
+          versionDetails: i!.versionDetails
+            ?.filter(detail => detail?.version !== null)
+            .map(detail => ({
+              version: detail!.version,
+              volumeSize: detail!.volumeSize ?? undefined,
+            })),
         })),
     }));
 };
@@ -130,6 +151,12 @@ export const getPublicSnapshotImageList = (
         versions: image!.versions.filter(
           version => version !== null,
         ) as string[],
+        versionDetails: image!.versionDetails
+          ?.filter(detail => detail?.version !== null)
+          .map(detail => ({
+            version: detail!.version,
+            volumeSize: detail!.volumeSize ?? undefined,
+          })),
       })),
   };
 };

@@ -13,10 +13,7 @@ import {
   Empty,
 } from 'antd';
 import { useContext, useEffect, useState, type FC } from 'react';
-import {
-  EnvironmentType,
-  Phase4,
-} from '../../../generated-types';
+import { EnvironmentType, Phase4 } from '../../../generated-types';
 import { WorkspaceImagesContext } from '../../../contexts/WorkspaceImagesContext';
 import { SharedVolumeList } from './SharedVolumeList';
 import type { SharedVolume } from '../../../utils';
@@ -27,7 +24,12 @@ import type {
   Image,
   ImageList,
 } from './types';
-import { formItemLayout, getImageNameNoVer, isInImageList } from './utils';
+import {
+  formItemLayout,
+  getImageNameNoVer,
+  isInImageList,
+  volumeSizeToGiB,
+} from './utils';
 import type { DefaultOptionType } from 'antd/es/cascader';
 
 // Environment type options
@@ -249,30 +251,41 @@ export const Environment: FC<EnvironmentProps> = ({
         )
           return [];
 
-        // CDI gives the PVC the same name and namespace as its DataVolume.
+        // PVC has the same name and namespace as its DataVolume.
         return [
           {
             value: `${dataVolumeRef.namespace}/${dataVolumeRef.name}`,
             label,
+            minimumDiskGiB: volumeSizeToGiB(
+              image?.status?.artifact?.volumeSize,
+            ),
           },
         ];
       })
       .sort((a, b) => a.label.localeCompare(b.label));
 
   const completedWorkspaceImages = completedImageOptions(workspaceImages);
-  const publicSnapshotImageOptions = (
-    publicSnapshotImageList?.images ?? []
-  )
+  const publicSnapshotImageOptions = (publicSnapshotImageList?.images ?? [])
     .flatMap(image =>
       image.versions.length
-        ? image.versions.map(version => ({
-            value: `${publicSnapshotImageList!.registryName}/${image.name}-${version}`,
-            label: `${image.name} (${version})`,
-          }))
+        ? image.versions.map(version => {
+            const versionDetails = image.versionDetails?.find(
+              details => details.version === version,
+            );
+            return {
+              value: `${publicSnapshotImageList!.registryName}/${image.name}-${version}`,
+              label: `${image.name} (${version})`,
+              minimumDiskGiB: volumeSizeToGiB(versionDetails?.volumeSize),
+            };
+          })
         : [
             {
               value: `${publicSnapshotImageList!.registryName}/${image.name}`,
               label: image.name,
+              minimumDiskGiB: volumeSizeToGiB(
+                image.versionDetails?.find(details => details.version === '')
+                  ?.volumeSize,
+              ),
             },
           ],
     )
@@ -325,6 +338,26 @@ export const Environment: FC<EnvironmentProps> = ({
     name,
     'image',
   ]);
+  const selectedImageMinimumDisk = currentImageValue
+    ? [...completedWorkspaceImages, ...publicSnapshotImageOptions].find(
+        image => image.value === currentImageValue,
+      )?.minimumDiskGiB
+    : undefined;
+  const localVmMinimumDisk = Math.max(
+    resources.disk.min,
+    selectedImageMinimumDisk ?? 0,
+  );
+
+  useEffect(() => {
+    if (
+      currentEnvironmentType !== EnvironmentType.LocalVm ||
+      !environments?.[name] ||
+      environments[name].disk >= localVmMinimumDisk
+    )
+      return;
+
+    form.setFieldValue(['environments', name, 'disk'], localVmMinimumDisk);
+  }, [currentEnvironmentType, environments, form, localVmMinimumDisk, name]);
 
   useEffect(() => {
     setImagesSearchOptions(getImageNamesCascader(currentAvailableImages));
@@ -870,10 +903,34 @@ export const Environment: FC<EnvironmentProps> = ({
         <Form.Item
           {...restField}
           name={[name, 'disk']}
+          rules={[
+            {
+              validator: async (_, value: number | null | undefined) => {
+                if (currentEnvironmentType !== EnvironmentType.LocalVm) return;
+                if (localVmMinimumDisk > resources.disk.max) {
+                  throw new Error(
+                    `The selected image requires at least ${localVmMinimumDisk} GiB, but the maximum available disk is ${resources.disk.max} GiB.`,
+                  );
+                }
+                if ((value ?? 0) < localVmMinimumDisk) {
+                  throw new Error(
+                    `Disk must be at least ${localVmMinimumDisk} GiB for the selected image.`,
+                  );
+                }
+              },
+            },
+          ]}
           label={
             <>
               Disk{' '}
-              <Tooltip title="Amount of disk space allocated to the environment, if persistent">
+              <Tooltip
+                title={
+                  currentEnvironmentType === EnvironmentType.LocalVm &&
+                  selectedImageMinimumDisk !== undefined
+                    ? `The selected image requires a disk of at least ${localVmMinimumDisk} GiB.`
+                    : 'Amount of disk space allocated to the environment, if persistent'
+                }
+              >
                 <InfoCircleOutlined className="ml-1" />
               </Tooltip>
             </>
@@ -887,11 +944,13 @@ export const Environment: FC<EnvironmentProps> = ({
             disabled={!isPersistent(name)}
             max={resources.disk.max}
             min={
-              getEnvironmentType(name) === EnvironmentType.VirtualMachine
-                ? isPersistent(name)
-                  ? resources.disk.min
+              getEnvironmentType(name) === EnvironmentType.LocalVm
+                ? localVmMinimumDisk
+                : getEnvironmentType(name) === EnvironmentType.VirtualMachine
+                  ? isPersistent(name)
+                    ? resources.disk.min
+                    : 0
                   : 0
-                : 0
             }
           />
         </Form.Item>
