@@ -130,10 +130,11 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
           ),
         );
     const adminGroup = `${VITE_APP_CROWNLABS_GROUPS_CLAIM_PREFIX}:${VITE_APP_CROWNLABS_GROUPS_ADMIN_CLAIM}`;
+    const imagePublisherGroup = `${VITE_APP_CROWNLABS_GROUPS_CLAIM_PREFIX}:image-publisher`;
     const userGroups = (profile?.groups || []) as string[];
     const isClusterAdmin = userGroups.includes(adminGroup);
     const canUseWorkspaceDestinations = isWorkspaceManager || isClusterAdmin;
-    const canPublishToPublicRegistry = Boolean(profile);
+    const canPublishToPublicRegistry = userGroups.includes(imagePublisherGroup);
 
     return {
       canCreateImages:
