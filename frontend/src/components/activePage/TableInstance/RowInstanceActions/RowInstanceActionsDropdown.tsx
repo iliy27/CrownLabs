@@ -108,8 +108,7 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
     });
   const navigate = useNavigate();
   const { data: tenantData, notify } = useContext(TenantContext);
-  const tenantName = tenantData?.tenant?.metadata?.name;
-  const { profile } = useContext(AuthContext);
+  const { profile, userId } = useContext(AuthContext);
   const { isDarkTheme } = useContext(ThemeContext);
   const { instances: ownedInstances } = useContext(OwnedInstancesContext);
 
@@ -165,7 +164,7 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
         latestInstance.environmentType === EnvironmentType.LocalVm);
 
     const showAction =
-      Boolean(tenantName) &&
+      Boolean(userId) &&
       hasSingleEnvironment &&
       imageCreationPermissions.canCreateImages &&
       supportsImages &&
@@ -181,7 +180,7 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
     imageCreationPermissions.canCreateImages,
     instance,
     ownedInstances,
-    tenantName,
+    userId,
   ]);
 
   // Check if user has access to utilities workspace
@@ -327,7 +326,7 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
             : selection.workspace;
     const environmentName = instance.environments?.[0]?.name;
 
-    if (!destinationNamespace || !environmentName || !tenantName) return;
+    if (!destinationNamespace || !environmentName || !userId) return;
 
     await createWorkspaceImage({
       variables: {
@@ -337,7 +336,9 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
         environmentName,
         imageName: selection.imageName,
         resourceName: createImageResourceName(selection.imageName),
-        tenantName,
+        snapshotLabels: {
+          'crownlabs.polito.it/tenant': userId,
+        },
         description: selection.description,
       },
     });

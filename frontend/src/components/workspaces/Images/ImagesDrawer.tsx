@@ -61,7 +61,10 @@ const ImagesDrawer: FC = () => {
           id: image?.metadata?.uid ?? image?.metadata?.name ?? '',
           resourceName: image?.metadata?.name ?? '',
           name: image?.spec?.imageName ?? image?.metadata?.name ?? '',
-          author: image?.spec?.tenantRef?.name ?? 'Unknown',
+          author:
+            (image?.metadata?.labels as Record<string, string> | null)?.[
+              'crownlabs.polito.it/tenant'
+            ] ?? 'Unknown',
           description:
             image?.spec?.description?.trim() || 'No description provided.',
           size: image?.status?.artifact?.volumeSize

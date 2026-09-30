@@ -5,7 +5,7 @@ mutation createWorkspaceImage(
   $environmentName: String!
   $imageName: String!
   $resourceName: String!
-  $tenantName: String!
+  $snapshotLabels: JSON!
   $description: String = ""
 ) {
   createdImage: createCrownlabsPolitoItV1alpha2NamespacedInstanceSnapshot(
@@ -13,7 +13,11 @@ mutation createWorkspaceImage(
     itPolitoCrownlabsV1alpha2InstanceSnapshotInput: {
       apiVersion: "crownlabs.polito.it/v1alpha2"
       kind: "InstanceSnapshot"
-      metadata: { name: $resourceName, namespace: $destinationNamespace }
+      metadata: {
+        name: $resourceName
+        namespace: $destinationNamespace
+        labels: $snapshotLabels
+      }
       spec: {
         instanceRef: {
           name: $sourceInstanceName
@@ -22,7 +26,6 @@ mutation createWorkspaceImage(
         environment: $environmentName
         imageName: $imageName
         description: $description
-        tenantRef: { name: $tenantName }
       }
     }
   ) {
@@ -32,6 +35,7 @@ mutation createWorkspaceImage(
       uid
       creationTimestamp
       generation
+      labels
     }
     spec {
       instanceRef {
@@ -41,10 +45,6 @@ mutation createWorkspaceImage(
       environment
       imageName
       description
-      tenantRef {
-        name
-        namespace
-      }
     }
     status {
       phase
