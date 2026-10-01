@@ -320,6 +320,9 @@ export const Environment: FC<EnvironmentProps> = ({
           ],
     )
     .sort((a, b) => a.label.localeCompare(b.label));
+  const publicSnapshotImageValues = new Set(
+    publicSnapshotImageOptions.map(image => image.value),
+  );
   const localImageOptions: DefaultOptionType[] = [
     {
       value: 'workspace',
@@ -663,8 +666,15 @@ export const Environment: FC<EnvironmentProps> = ({
             name={[name, 'image']}
             rules={[{ required: true, message: 'Select an image' }]}
             {...formItemLayout}
-            getValueProps={value => ({
-              value: value ? ['workspace', value] : [],
+            getValueProps={(value?: string) => ({
+              value: value
+                ? [
+                    publicSnapshotImageValues.has(value)
+                      ? 'public-registry'
+                      : 'workspace',
+                    value,
+                  ]
+                : [],
             })}
             getValueFromEvent={(value: string[]) =>
               value?.length === 2 ? value[1] : ''
@@ -675,6 +685,12 @@ export const Environment: FC<EnvironmentProps> = ({
               placeholder="Select image source"
               expandTrigger="click"
               changeOnSelect={false}
+              displayRender={(labels, selectedOptions) =>
+                selectedOptions?.[0]?.value === 'public-registry' &&
+                currentImageValue
+                  ? currentImageValue.replace('/', ' / ')
+                  : labels.join(' / ')
+              }
               getPopupContainer={trigger =>
                 trigger.parentElement || document.body
               }
