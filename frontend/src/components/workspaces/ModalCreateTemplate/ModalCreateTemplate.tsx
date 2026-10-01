@@ -134,6 +134,11 @@ const ModalCreateTemplate: FC<IModalCreateTemplateProps> = ({ ...props }) => {
     error: imageListsError,
   } = useImagesQuery({
     variables: {},
+    // Run the query when the modal opens. Reuse cached ImageLists immediately
+    // while also refreshing them from qlkube, so newly published public images
+    // appear without requiring a page reload.
+    skip: !show,
+    fetchPolicy: 'cache-and-network',
     onError: apolloErrorCatcher,
   });
 
