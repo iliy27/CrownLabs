@@ -36,8 +36,6 @@ import {
 } from '../../../../utilsLogic';
 import { ErrorContext } from '../../../../errorHandling/ErrorContext';
 import {
-  VITE_APP_CROWNLABS_GROUPS_ADMIN_CLAIM,
-  VITE_APP_CROWNLABS_GROUPS_CLAIM_PREFIX,
   VITE_APP_CROWNLABS_PUBLIC_REGISTRY_NAME_DESTINATION,
   VITE_APP_MYDRIVE_WORKSPACE_NAME,
 } from '../../../../env';
@@ -108,7 +106,7 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
     });
   const navigate = useNavigate();
   const { data: tenantData, notify } = useContext(TenantContext);
-  const { profile, userId } = useContext(AuthContext);
+  const { isClusterAdmin, isImagePublisher, userId } = useContext(AuthContext);
   const { isDarkTheme } = useContext(ThemeContext);
   const { instances: ownedInstances } = useContext(OwnedInstancesContext);
 
@@ -128,12 +126,8 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
               workspace.role === Role.Manager,
           ),
         );
-    const adminGroup = `${VITE_APP_CROWNLABS_GROUPS_CLAIM_PREFIX}:${VITE_APP_CROWNLABS_GROUPS_ADMIN_CLAIM}`;
-    const imagePublisherGroup = `${VITE_APP_CROWNLABS_GROUPS_CLAIM_PREFIX}:image-publisher`;
-    const userGroups = (profile?.groups || []) as string[];
-    const isClusterAdmin = userGroups.includes(adminGroup);
     const canUseWorkspaceDestinations = isWorkspaceManager || isClusterAdmin;
-    const canPublishToPublicRegistry = userGroups.includes(imagePublisherGroup);
+    const canPublishToPublicRegistry = isClusterAdmin || isImagePublisher;
 
     return {
       canCreateImages:
@@ -144,7 +138,12 @@ const RowInstanceActionsDropdown: FC<IRowInstanceActionsDropdownProps> = ({
       isPersonalWorkspace,
       personalWorkspaceAvailable,
     };
-  }, [instance.workspaceName, profile, tenantData?.tenant]);
+  }, [
+    instance.workspaceName,
+    isClusterAdmin,
+    isImagePublisher,
+    tenantData?.tenant,
+  ]);
 
   const { data: allWorkspacesData, loading: loadingAllWorkspaces } =
     useWorkspacesQuery({
