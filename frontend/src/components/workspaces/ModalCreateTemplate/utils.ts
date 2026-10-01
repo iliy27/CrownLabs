@@ -46,6 +46,20 @@ export const volumeSizeToGiB = (
   return match ? Number(match[1]) : undefined;
 };
 
+export const getSnapshotDateTime = (
+  resourceName?: string | null,
+  imageName?: string | null,
+): string | undefined => {
+  if (!resourceName || !imageName) return;
+
+  const prefix = `${imageName}-`;
+  const suffix = resourceName.startsWith(prefix)
+    ? resourceName.slice(prefix.length)
+    : '';
+
+  return /^\d{8}-\d{6}$/.test(suffix) ? suffix : undefined;
+};
+
 export const getDefaultTemplate = (resources: Resources): Template => {
   return {
     name: '',

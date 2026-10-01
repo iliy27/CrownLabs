@@ -27,6 +27,7 @@ import type {
 import {
   formItemLayout,
   getImageNameNoVer,
+  getSnapshotDateTime,
   isInImageList,
   volumeSizeToGiB,
 } from './utils';
@@ -238,24 +239,52 @@ export const Environment: FC<EnvironmentProps> = ({
     error: workspaceImagesError,
   } = useContext(WorkspaceImagesContext);
 
-  const completedImageOptions = (images: typeof workspaceImages) =>
-    (images?.imageList?.images ?? [])
+  const completedImageOptions = (images: typeof workspaceImages) => {
+    const selectableImages = images?.imageList?.images ?? [];
+    const imageNameOccurrences = new Map<string, number>();
+
+    selectableImages.forEach(image => {
+      const dataVolumeRef = image?.status?.artifact?.dataVolumeRef;
+      const imageName = image?.spec?.imageName || image?.metadata?.name;
+      if (
+        image?.status?.phase === Phase4.Completed &&
+        dataVolumeRef?.name &&
+        dataVolumeRef.namespace &&
+        imageName
+      ) {
+        imageNameOccurrences.set(
+          imageName,
+          (imageNameOccurrences.get(imageName) ?? 0) + 1,
+        );
+      }
+    });
+
+    return selectableImages
       .flatMap(image => {
         const dataVolumeRef = image?.status?.artifact?.dataVolumeRef;
-        const label = image?.spec?.imageName || image?.metadata?.name;
+        const imageName = image?.spec?.imageName || image?.metadata?.name;
         if (
           image?.status?.phase !== Phase4.Completed ||
           !dataVolumeRef?.name ||
           !dataVolumeRef.namespace ||
-          !label
+          !imageName
         )
           return [];
+
+        const dateTime = getSnapshotDateTime(
+          image?.metadata?.name,
+          image?.spec?.imageName,
+        );
+        const hasDuplicateName = (imageNameOccurrences.get(imageName) ?? 0) > 1;
 
         // PVC has the same name and namespace as its DataVolume.
         return [
           {
             value: `${dataVolumeRef.namespace}/${dataVolumeRef.name}`,
-            label,
+            label:
+              hasDuplicateName && dateTime
+                ? `${imageName} (${dateTime})`
+                : imageName,
             minimumDiskGiB: volumeSizeToGiB(
               image?.status?.artifact?.volumeSize,
             ),
@@ -263,6 +292,7 @@ export const Environment: FC<EnvironmentProps> = ({
         ];
       })
       .sort((a, b) => a.label.localeCompare(b.label));
+  };
 
   const completedWorkspaceImages = completedImageOptions(workspaceImages);
   const publicSnapshotImageOptions = (publicSnapshotImageList?.images ?? [])
