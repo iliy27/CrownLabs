@@ -32,7 +32,7 @@ configuration:
     publicSnapshots: public-local-snapshots
   imageCreationWarning: "Before creating an image, reset cloud-init and complete any required manual configuration inside the VM."
   imageCreationHelp: "https://www.youtube.com/watch?v=i7fqga7xQv0"
-  publicRegistryNameDestination: cldprog-5-block-vms-tests
+  publicRegistryNameDestination: crownlabs-public-snapshots
   customResources:
     nvidia.com/gpu: "NVIDIA GPU"
     amd.com/gpu: "AMD GPU"
